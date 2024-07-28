@@ -1,0 +1,147 @@
+local allowedUserIds = {
+    12345678, -- Replace with actual UserId
+    87654321, -- Replace with actual UserId
+    -- Add more UserIds as needed
+}
+
+local player = game.Players.LocalPlayer
+local userId = player.UserId
+
+-- Check if the player is allowed to use this script
+local isAllowed = false
+for _, id in ipairs(allowedUserIds) do
+    if userId == id then
+        isAllowed = true
+        break
+    end
+end
+
+if not isAllowed then
+    return -- Stop executing the script if the player is not allowed
+end
+
+-- Create GUI
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.Name = "UltimateTrollingGUI"
+
+local toggleButton = Instance.new("TextButton", screenGui)
+toggleButton.Size = UDim2.new(0, 100, 0, 50)
+toggleButton.Position = UDim2.new(0, 10, 0, 10)
+toggleButton.Text = "Minimize"
+
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 220, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -110, 0, 70)
+mainFrame.BackgroundTransparency = 0.5
+mainFrame.Visible = true
+
+local dropdown = Instance.new("Frame", mainFrame)
+dropdown.Size = UDim2.new(0, 200, 0, 30)
+dropdown.Position = UDim2.new(0.5, -100, 0, 10)
+
+local selectedPlayer = Instance.new("TextLabel", dropdown)
+selectedPlayer.Size = UDim2.new(1, -30, 1, 0)
+selectedPlayer.Text = "Select Player"
+
+local dropButton = Instance.new("TextButton", dropdown)
+dropButton.Size = UDim2.new(0, 30, 1, 0)
+dropButton.Position = UDim2.new(1, -30, 0, 0)
+dropButton.Text = "v"
+
+local dropDownList = Instance.new("Frame", dropdown)
+dropDownList.Size = UDim2.new(1, 0, 0, 0)
+dropDownList.Position = UDim2.new(0, 0, 1, 0)
+dropDownList.ClipsDescendants = true
+
+dropButton.MouseButton1Click:Connect(function()
+    local newSize = (dropDownList.Size.Y.Offset == 0) and 200 or 0
+    dropDownList:TweenSize(UDim2.new(1, 0, 0, newSize), "Out", "Quad", 0.5, true)
+end)
+
+local function updateDropdown()
+    dropDownList:ClearAllChildren()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer then
+            local playerButton = Instance.new("TextButton", dropDownList)
+            playerButton.Size = UDim2.new(1, 0, 0, 30)
+            playerButton.Text = player.Name
+            playerButton.MouseButton1Click:Connect(function()
+                selectedPlayer.Text = player.Name
+                dropDownList:TweenSize(UDim2.new(1, 0, 0, 0), "Out", "Quad", 0.5, true)
+            end)
+        end
+    end
+end
+
+updateDropdown()
+game.Players.PlayerAdded:Connect(updateDropdown)
+game.Players.PlayerRemoving:Connect(updateDropdown)
+
+local actions = {
+    Teleport = function(player)
+        if player.Character then
+            player.Character:SetPrimaryPartCFrame(CFrame.new(math.random(-100, 100), math.random(10, 50), math.random(-100, 100)))
+        end
+    end,
+    Flip = function(player)
+        if player.Character then
+            player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(180), 0)
+        end
+    end,
+    Dance = function(player)
+        if player.Character then
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://2510196951"
+            player.Character.Humanoid:LoadAnimation(anim):Play()
+        end
+    end,
+    ["Change Size"] = function(player)
+        if player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.BodyHeightScale.Value = math.random(50, 150) / 100
+                humanoid.BodyWidthScale.Value = math.random(50, 150) / 100
+                humanoid.BodyDepthScale.Value = math.random(50, 150) / 100
+            end
+        end
+    end,
+    ["Change Color"] = function(player)
+        if player.Character then
+            for _, part in ipairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.BrickColor = BrickColor.Random()
+                end
+            end
+        end
+    end,
+    Freeze = function(player)
+        if player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.PlatformStand = true
+                wait(3)
+                humanoid.PlatformStand = false
+            end
+        end
+    end
+}
+
+local buttonY = 40
+for actionName, actionFunc in pairs(actions) do
+    local button = Instance.new("TextButton", mainFrame)
+    button.Size = UDim2.new(0, 200, 0, 50)
+    button.Position = UDim2.new(0.5, -100, 0, buttonY)
+    button.Text = actionName
+    button.MouseButton1Click:Connect(function()
+        local player = game.Players:FindFirstChild(selectedPlayer.Text)
+        if player and player ~= game.Players.LocalPlayer then
+            actionFunc(player)
+        end
+    end)
+    buttonY = buttonY + 60
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+    toggleButton.Text = mainFrame.Visible and "Minimize" or "Maximize"
+end)
